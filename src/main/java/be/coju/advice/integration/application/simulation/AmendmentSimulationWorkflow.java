@@ -2,6 +2,7 @@ package be.coju.advice.integration.application.simulation;
 
 import be.coju.advice.integration.domain.OperationHandler;
 import be.coju.advice.integration.domain.OperationHandlerRegistry;
+import be.coju.advice.integration.domain.WorkflowContext;
 import be.coju.advice.integration.web.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ public class AmendmentSimulationWorkflow {
 
     private Simulation runSimulation(AdviceRequest adviceRequest) {
         log.info("Running simulation for operation types: {}", adviceRequest.getOperationTypes());
-        OperationHandler handler = operationHandlerRegistry.resolve(adviceRequest);
+        OperationHandler handler = operationHandlerRegistry.resolve(adviceRequest, WorkflowContext.SIMULATION);
 
         handler.createOperation(adviceRequest.getContractNumber());
         BigDecimal costs = handler.calculateCosts(adviceRequest.getContractNumber());

@@ -2,6 +2,7 @@ package be.coju.advice.integration.application.decision;
 
 import be.coju.advice.integration.domain.OperationHandler;
 import be.coju.advice.integration.domain.OperationHandlerRegistry;
+import be.coju.advice.integration.domain.WorkflowContext;
 import be.coju.advice.integration.web.AdviceRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ public class AmendmentConfirmationWorkflow {
 
     private void runConfirmation(AdviceRequest adviceRequest) {
         log.info("Running confirmation for operation types: {}", adviceRequest.getOperationTypes());
-        OperationHandler handler = operationHandlerRegistry.resolve(adviceRequest);
+        OperationHandler handler = operationHandlerRegistry.resolve(adviceRequest, WorkflowContext.CONFIRMATION);
 
         handler.createOperation(adviceRequest.getContractNumber());
         handler.executeOperation(adviceRequest.getContractNumber());

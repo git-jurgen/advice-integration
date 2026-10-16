@@ -25,15 +25,38 @@ public class PaymentResolver implements OperationResolver {
 
     @Override
     public OperationHandler resolve(AdviceRequest adviceRequest) {
-        OperationType operationType = adviceRequest.getOperationTypes().getFirst();
-        log.info("Payment resolver resolve operation type: {}", operationType);
+        return resolve(adviceRequest, WorkflowContext.SIMULATION);
+    }
 
+    @Override
+    public OperationHandler resolve(AdviceRequest adviceRequest, WorkflowContext workflowContext) {
+        OperationType operationType = adviceRequest.getOperationTypes().getFirst();
+        log.info("Payment resolver resolve operation type: {} for workflow: {}", operationType, workflowContext);
+
+        if (workflowContext == WorkflowContext.CONFIRMATION) {
+            return resolveConfirmation(adviceRequest, operationType);
+        }
+
+        return resolveSimulation(adviceRequest, operationType);
+    }
+
+    private OperationHandler resolveSimulation(AdviceRequest adviceRequest, OperationType operationType) {
         if (isInvestmentRulesOperation(operationType) && isAmountZero(adviceRequest)) {
             return investmentRulesHandler;
         } else if (adviceRequest.hasScheduledPayment()) {
             return updateScheduledPaymentHandler;
         } else {
             return requestScheduledPaymentHandler;
+        }
+    }
+
+    private OperationHandler resolveConfirmation(AdviceRequest adviceRequest, OperationType operationType) {
+        if (isInvestmentRulesOperation(operationType) && isAmountZero(adviceRequest)) {
+            return investmentRulesHandler;
+        } else if (adviceRequest.hasScheduledPayment()) {
+            return requestScheduledPaymentHandler;
+        } else {
+            return updateScheduledPaymentHandler;
         }
     }
 
