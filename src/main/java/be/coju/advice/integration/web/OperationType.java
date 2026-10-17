@@ -4,21 +4,26 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum OperationType {
-    SWITCH("switch"),
-    PARTIAL_SURRENDER("partialSurrender"),
-    TOTAL_SURRENDER("totalSurrender"),
-    UNSOLICITED_PAYMENT("unsolicitedPayment"),
-    PAYMENT_PLAN("paymentPlan"),
-    INVESTMENT_RULES("investmentRules"),
-    PAYMENT_PLAN_AND_INVESTMENT_RULES("paymentplanAndInvestmentrules"),
-    TOTAL_SURRENDER_END_IGP("totalSurrenderEndIgp"),
-    PARTIAL_SURRENDER_END_IGP("partialSurrenderEndIgp");
+    SWITCH("switch", 4),
+    PARTIAL_SURRENDER("partialSurrender", 2),
+    TOTAL_SURRENDER("totalSurrender", 3),
+    UNSOLICITED_PAYMENT("unsolicitedPayment", 1),
+    PAYMENT_PLAN("paymentPlan", 5),
+    INVESTMENT_RULES("investmentRules", 6),
+    PAYMENT_PLAN_AND_INVESTMENT_RULES("paymentplanAndInvestmentrules", 7),
+    TOTAL_SURRENDER_END_IGP("totalSurrenderEndIgp", 8),
+    PARTIAL_SURRENDER_END_IGP("partialSurrenderEndIgp", 9);
 
     private final String label;
+    private final int priority;
 
-    OperationType(String label) { this.label = label; }
+    OperationType(String label, int priority) { this.label = label; this.priority = priority; }
 
     public String getLabel() { return label; }
+
+    public int getPriority() {
+        return priority;
+    }
 
     @JsonValue
     @Override
