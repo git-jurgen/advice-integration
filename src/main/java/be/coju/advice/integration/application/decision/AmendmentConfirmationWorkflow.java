@@ -4,6 +4,7 @@ import be.coju.advice.integration.domain.OperationHandler;
 import be.coju.advice.integration.domain.OperationHandlerRegistry;
 import be.coju.advice.integration.domain.WorkflowContext;
 import be.coju.advice.integration.web.AdviceRequest;
+import be.coju.advice.integration.web.OperationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,10 +21,14 @@ public class AmendmentConfirmationWorkflow {
 
     private void runConfirmation(AdviceRequest adviceRequest) {
         log.info("Running confirmation for operation types: {}", adviceRequest.getOperationTypes());
-        OperationHandler handler = operationHandlerRegistry.resolve(adviceRequest, WorkflowContext.CONFIRMATION);
+        OperationType operationType = adviceRequest.getOperationTypes().getFirst();
+        OperationHandler handler = operationHandlerRegistry
+                .resolveAll(adviceRequest, WorkflowContext.CONFIRMATION)
+                .getHandlers()
+                .get(operationType);
 
         handler.createOperation(adviceRequest.getContractNumber());
         handler.executeOperation(adviceRequest.getContractNumber());
-        handler.startBpmProcess(adviceRequest.getContractNumber(), adviceRequest.getOperationTypes().getFirst());
+        handler.startBpmProcess(adviceRequest.getContractNumber(), operationType);
     }
 }

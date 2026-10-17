@@ -29,13 +29,17 @@ public class AmendmentSimulationWorkflow {
 
     private Simulation runSimulation(AdviceRequest adviceRequest) {
         log.info("Running simulation for operation types: {}", adviceRequest.getOperationTypes());
-        OperationHandler handler = operationHandlerRegistry.resolve(adviceRequest, WorkflowContext.SIMULATION);
+        OperationType operationType = adviceRequest.getOperationTypes().getFirst();
+        OperationHandler handler = operationHandlerRegistry
+                .resolveAll(adviceRequest, WorkflowContext.SIMULATION)
+                .getHandlers()
+                .get(operationType);
 
         handler.createOperation(adviceRequest.getContractNumber());
         BigDecimal costs = handler.calculateCosts(adviceRequest.getContractNumber());
 
         return Simulation.builder()
-                .operationType(adviceRequest.getOperationTypes().getFirst())
+                .operationType(operationType)
                 .costs(List.of(Cost.builder().costType("CostA").amount(costs).build()))
                 .build();
     }

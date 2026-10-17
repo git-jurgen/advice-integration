@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -18,48 +19,30 @@ public class OperationHandlerRegistry {
     private final List<OperationHandler> operationHandlers;
     private final List<OperationResolver> operationResolvers;
 
-    public OperationHandler resolve(AdviceRequest adviceRequest) {
-        return resolve(adviceRequest, WorkflowContext.SIMULATION);
-    }
-
-    public OperationHandler resolve(AdviceRequest adviceRequest, WorkflowContext workflowContext) {
-        var operationTypes = adviceRequest.getOperationTypes();
-        var primaryType = operationTypes.stream()
-                .filter(type -> operationResolvers.stream().anyMatch(resolver -> resolver.supports(type)))
-                .findFirst()
-                .orElseGet(() -> operationTypes.stream()
-                        .filter(type -> operationHandlers.stream().anyMatch(handler -> handler.supports(type)))
-                        .findFirst()
-                        .orElse(operationTypes.isEmpty() ? null : operationTypes.getFirst()));
-
-        log.info("Resolving operation handler for request with operation types: {} in workflow {}. Selected: {}", operationTypes, workflowContext, primaryType);
-
-        if (primaryType == null) {
-            throw new IllegalArgumentException("No operation types provided in advice request");
-        }
-
-        return operationResolvers.stream()
-                .filter(resolver -> operationTypes.stream().anyMatch(resolver::supports))
-                .findFirst()
-                .map(resolver -> resolver.resolve(adviceRequest, workflowContext))
-                .orElseGet(() -> operationHandlers.stream()
-                        .filter(handler -> operationTypes.stream().anyMatch(handler::supports))
-                        .findFirst()
-                        .orElseThrow(() -> new IllegalArgumentException("No handler found for operation type: " + primaryType)));
-    }
-
-    public ResolvedOperationHandlers resolveAll(AdviceRequest adviceRequest) {
-        return resolveAll(adviceRequest, WorkflowContext.SIMULATION);
-    }
-
     public ResolvedOperationHandlers resolveAll(AdviceRequest adviceRequest, WorkflowContext workflowContext) {
         Map<OperationType, OperationHandler> handlers = new LinkedHashMap<>();
         adviceRequest.getOperationTypes().stream()
                 .distinct()
                 .sorted(Comparator.comparingInt(OperationType::getPriority))
-                .forEach(operationType -> handlers.put(
-                        operationType,
-                        resolve(adviceRequest.forOperationType(operationType), workflowContext)));
+                .forEach(operationType -> {
+                    AdviceRequest operationRequest = adviceRequest.forOperationType(operationType);
+                    log.info("Resolving operation handler for type: {} in workflow {}", operationType, workflowContext);
+
+                    OperationHandler handler = operationResolvers.stream()
+                            .filter(resolver -> resolver.supports(operationType))
+                            .findFirst()
+                            .map(resolver -> resolver.resolve(operationRequest, workflowContext))
+                            .orElseGet(() -> operationHandlers.stream()
+                                    .filter(candidate -> candidate.supports(operationType))
+                                    .findFirst()
+                                    .orElseThrow(() -> new IllegalArgumentException(
+                                            "No handler found for operation type: " + operationType)));
+                    handlers.put(operationType, handler);
+                });
+
+        if (handlers.isEmpty()) {
+            throw new IllegalArgumentException("No operation types provided in advice request");
+        }
         return new ResolvedOperationHandlers(handlers);
     }
 }
