@@ -14,4 +14,3 @@ public interface OperationResolver {
         return resolve(adviceRequest);
     }
 }
-

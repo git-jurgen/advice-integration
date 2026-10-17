@@ -1,11 +1,15 @@
 package be.coju.advice.integration.domain;
 
 import be.coju.advice.integration.web.AdviceRequest;
+import be.coju.advice.integration.web.OperationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -42,5 +46,20 @@ public class OperationHandlerRegistry {
                         .filter(handler -> operationTypes.stream().anyMatch(handler::supports))
                         .findFirst()
                         .orElseThrow(() -> new IllegalArgumentException("No handler found for operation type: " + primaryType)));
+    }
+
+    public ResolvedOperationHandlers resolveAll(AdviceRequest adviceRequest) {
+        return resolveAll(adviceRequest, WorkflowContext.SIMULATION);
+    }
+
+    public ResolvedOperationHandlers resolveAll(AdviceRequest adviceRequest, WorkflowContext workflowContext) {
+        Map<OperationType, OperationHandler> handlers = new LinkedHashMap<>();
+        adviceRequest.getOperationTypes().stream()
+                .distinct()
+                .sorted(Comparator.comparingInt(OperationType::getPriority))
+                .forEach(operationType -> handlers.put(
+                        operationType,
+                        resolve(adviceRequest.forOperationType(operationType), workflowContext)));
+        return new ResolvedOperationHandlers(handlers);
     }
 }
