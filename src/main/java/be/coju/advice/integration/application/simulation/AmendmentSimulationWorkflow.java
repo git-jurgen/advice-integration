@@ -2,6 +2,7 @@ package be.coju.advice.integration.application.simulation;
 
 import be.coju.advice.integration.domain.OperationHandler;
 import be.coju.advice.integration.domain.OperationHandlerRegistry;
+import be.coju.advice.integration.domain.ResolvedOperationHandlers;
 import be.coju.advice.integration.domain.WorkflowContext;
 import be.coju.advice.integration.web.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -18,8 +20,10 @@ public class AmendmentSimulationWorkflow {
     private final OperationHandlerRegistry operationHandlerRegistry;
 
     public SimulationResponse execute(AdviceRequest adviceRequest) {
-        List<Simulation> simulations = adviceRequest.getOperationTypes().stream()
-                .map(operationType -> runSimulation(adviceRequest.forOperationType(operationType)))
+        ResolvedOperationHandlers resolvedOperationHandlers = operationHandlerRegistry.resolveAll(adviceRequest, WorkflowContext.SIMULATION);
+
+        List<Simulation> simulations = resolvedOperationHandlers.getHandlers().entrySet().stream()
+                .map(entry -> runSimulation(entry, adviceRequest.forOperationType(entry.getKey())))
                 .toList();
 
         return SimulationResponse.builder()
@@ -27,19 +31,14 @@ public class AmendmentSimulationWorkflow {
                 .build();
     }
 
-    private Simulation runSimulation(AdviceRequest adviceRequest) {
+    private Simulation runSimulation(Map.Entry<OperationType, OperationHandler> handler, AdviceRequest adviceRequest) {
         log.info("Running simulation for operation types: {}", adviceRequest.getOperationTypes());
-        OperationType operationType = adviceRequest.getOperationTypes().getFirst();
-        OperationHandler handler = operationHandlerRegistry
-                .resolveAll(adviceRequest, WorkflowContext.SIMULATION)
-                .getHandlers()
-                .get(operationType);
 
-        handler.createOperation(adviceRequest.getContractNumber());
-        BigDecimal costs = handler.calculateCosts(adviceRequest.getContractNumber());
+        handler.getValue().createOperation(adviceRequest.getContractNumber());
+        BigDecimal costs = handler.getValue().calculateCosts(adviceRequest.getContractNumber());
 
         return Simulation.builder()
-                .operationType(operationType)
+                .operationType(handler.getKey())
                 .costs(List.of(Cost.builder().costType("CostA").amount(costs).build()))
                 .build();
     }
