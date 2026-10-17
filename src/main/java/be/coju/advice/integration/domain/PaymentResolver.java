@@ -1,14 +1,14 @@
 package be.coju.advice.integration.domain;
 
 import be.coju.advice.integration.web.AdviceRequest;
-import be.coju.advice.integration.web.Operation;
 import be.coju.advice.integration.web.OperationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumSet;
-import java.util.List;
+
+import static java.math.BigDecimal.ZERO;
 
 @Component
 @RequiredArgsConstructor
@@ -33,31 +33,25 @@ public class PaymentResolver implements OperationResolver {
         OperationType operationType = adviceRequest.getOperationTypes().getFirst();
         log.info("Payment resolver resolve operation type: {} for workflow: {}", operationType, workflowContext);
 
-        if (workflowContext == WorkflowContext.CONFIRMATION) {
-            return resolveConfirmation(adviceRequest, operationType);
-        }
-
-        return resolveSimulation(adviceRequest, operationType);
+        return resolvePaymentHandler(adviceRequest, operationType);
     }
 
     private OperationHandler resolveSimulation(AdviceRequest adviceRequest, OperationType operationType) {
-        if (isInvestmentRulesOperation(operationType) && isAmountZero(adviceRequest)) {
-            return investmentRulesHandler;
-        } else if (adviceRequest.hasScheduledPayment()) {
-            return updateScheduledPaymentHandler;
-        } else {
-            return requestScheduledPaymentHandler;
-        }
+        return resolvePaymentHandler(adviceRequest, operationType);
     }
 
     private OperationHandler resolveConfirmation(AdviceRequest adviceRequest, OperationType operationType) {
+        return resolvePaymentHandler(adviceRequest, operationType);
+    }
+
+    private OperationHandler resolvePaymentHandler(AdviceRequest adviceRequest, OperationType operationType) {
         if (isInvestmentRulesOperation(operationType) && isAmountZero(adviceRequest)) {
             return investmentRulesHandler;
-        } else if (adviceRequest.hasScheduledPayment()) {
-            return requestScheduledPaymentHandler;
-        } else {
+        }
+        if (adviceRequest.hasScheduledPayment()) {
             return updateScheduledPaymentHandler;
         }
+        return requestScheduledPaymentHandler;
     }
 
     private boolean isInvestmentRulesOperation(OperationType operationType) {
@@ -67,6 +61,6 @@ public class PaymentResolver implements OperationResolver {
 
     private boolean isAmountZero(AdviceRequest adviceRequest) {
         return adviceRequest.getOperations().stream()
-                .anyMatch(op -> op.getAmount() != null && op.getAmount().compareTo(java.math.BigDecimal.ZERO) == 0);
+                .anyMatch(op -> op.getAmount() != null && op.getAmount().compareTo(ZERO) == 0);
     }
 }
