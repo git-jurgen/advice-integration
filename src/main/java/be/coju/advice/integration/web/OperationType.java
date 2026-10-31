@@ -12,7 +12,8 @@ public enum OperationType {
     INVESTMENT_RULES("investmentRules", 6),
     PAYMENT_PLAN_AND_INVESTMENT_RULES("paymentplanAndInvestmentrules", 7),
     TOTAL_SURRENDER_END_IGP("totalSurrenderEndIgp", 8),
-    PARTIAL_SURRENDER_END_IGP("partialSurrenderEndIgp", 9);
+    PARTIAL_SURRENDER_END_IGP("partialSurrenderEndIgp", 9),
+    DELETE_PAYMENT_PLAN("deletePaymentPlan", 10);
 
     private final String label;
     private final int priority;

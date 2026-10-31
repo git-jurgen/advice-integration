@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PaymentResolverTest {
     private final InvestmentRulesHandler investmentRulesHandler = new InvestmentRulesHandler();
@@ -46,6 +47,14 @@ class PaymentResolverTest {
         AdviceRequest request = createRequest(OperationType.PAYMENT_PLAN, BigDecimal.TEN, true);
 
         assertSame(updateScheduledPaymentHandler, resolver.resolve(request, WorkflowContext.CONFIRMATION));
+    }
+
+    @Test
+    void resolveDeletePaymentPlanUsesUpdateScheduledPaymentHandlerWithoutExistingPayment() {
+        AdviceRequest request = createRequest(OperationType.DELETE_PAYMENT_PLAN, BigDecimal.ZERO, false);
+
+        assertTrue(resolver.supports(OperationType.DELETE_PAYMENT_PLAN));
+        assertSame(updateScheduledPaymentHandler, resolver.resolve(request, WorkflowContext.SIMULATION));
     }
 
     @Test

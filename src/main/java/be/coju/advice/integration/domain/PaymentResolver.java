@@ -20,7 +20,12 @@ public class PaymentResolver implements OperationResolver {
 
     @Override
     public boolean supports(OperationType operationType) {
-        return EnumSet.of(OperationType.PAYMENT_PLAN, OperationType.INVESTMENT_RULES, OperationType.PAYMENT_PLAN_AND_INVESTMENT_RULES).contains(operationType);
+        return EnumSet.of(
+                OperationType.PAYMENT_PLAN,
+                OperationType.INVESTMENT_RULES,
+                OperationType.PAYMENT_PLAN_AND_INVESTMENT_RULES,
+                OperationType.DELETE_PAYMENT_PLAN
+        ).contains(operationType);
     }
 
     @Override
@@ -45,6 +50,9 @@ public class PaymentResolver implements OperationResolver {
     }
 
     private OperationHandler resolvePaymentHandler(AdviceRequest adviceRequest, OperationType operationType) {
+        if (operationType.equals(OperationType.DELETE_PAYMENT_PLAN)) {
+            return updateScheduledPaymentHandler;
+        }
         if (isInvestmentRulesOperation(operationType) && isAmountZero(adviceRequest)) {
             return investmentRulesHandler;
         }
