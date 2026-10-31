@@ -6,11 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashMap;
-import java.util.Comparator;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -28,15 +24,7 @@ public class OperationHandlerRegistry {
                     AdviceRequest operationRequest = adviceRequest.forOperationType(operationType);
                     log.info("Resolving operation handler for type: {} in workflow {}", operationType, workflowContext);
 
-                    OperationHandler handler = operationResolvers.stream()
-                            .filter(resolver -> resolver.supports(operationType))
-                            .findFirst()
-                            .map(resolver -> resolver.resolve(operationRequest, workflowContext))
-                            .orElseGet(() -> operationHandlers.stream()
-                                    .filter(candidate -> candidate.supports(operationType))
-                                    .findFirst()
-                                    .orElseThrow(() -> new IllegalArgumentException(
-                                            "No handler found for operation type: " + operationType)));
+                    OperationHandler handler = resolveOperationHandler(workflowContext, operationType, operationRequest);
                     handlers.put(operationType, handler);
                 });
 
@@ -44,5 +32,21 @@ public class OperationHandlerRegistry {
             throw new IllegalArgumentException("No operation types provided in advice request");
         }
         return new ResolvedOperationHandlers(handlers);
+    }
+
+    private OperationHandler resolveOperationHandler(WorkflowContext workflowContext, OperationType operationType, AdviceRequest operationRequest) {
+        return operationResolvers.stream()
+                .filter(resolver -> resolver.supports(operationType))
+                .findFirst()
+                .map(resolver -> resolver.resolve(operationRequest, workflowContext))
+                .orElseGet(() -> getOperationHandler(operationType));
+    }
+
+    private OperationHandler getOperationHandler(OperationType operationType) {
+        return operationHandlers.stream()
+                .filter(candidate -> candidate.supports(operationType))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "No handler found for operation type: " + operationType));
     }
 }
